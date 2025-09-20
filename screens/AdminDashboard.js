@@ -7,12 +7,29 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  Button,
-  Image, 
+  Image,
+  // Removed Picker from react-native import
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker'; 
+import { Picker } from '@react-native-picker/picker'; // Correct import for Picker
 import MapView, { Marker } from 'react-native-maps';
 import { supabase } from '../utils/supabase';
+
+// Define theme colors
+const Colors = {
+  primaryDark: '#0A192F', // Deep dark blue
+  secondaryDark: '#172A45', // Slightly lighter dark blue for cards
+  accentBlue: '#64FFDA', // Bright greenish-blue for accents/buttons
+  textPrimary: '#CCD6F6', // Light gray for primary text
+  textSecondary: '#8892B0', // Gray for secondary text
+  redSeverity: '#FF6B6B', // Red for high severity
+  orangeSeverity: '#FFA07A', // Orange for medium severity
+  greenSeverity: '#84DCC6', // Teal/Green for low severity
+  borderColor: '#303C55', // Border color for inputs/cards
+  statusPending: '#FFC300', // Amber for pending
+  statusValidated: '#28a745', // Green for validated
+  statusResolved: '#17a2b8', // Teal for resolved
+  statusFalse: '#dc3545', // Red for false
+};
 
 const AdminDashboard = () => {
   const [reports, setReports] = useState([]);
@@ -28,7 +45,7 @@ const AdminDashboard = () => {
     const { data, error } = await supabase
       .from('reports')
       .select('*')
-      .order('created_at', { ascending: false }); // Show latest first
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching all reports:', error.message);
@@ -36,13 +53,22 @@ const AdminDashboard = () => {
     } else {
       setReports(data);
       if (data.length > 0) {
-        // Set initial map region to the first report's location, or a default
-        setMapRegion({
-          latitude: data[0].latitude || 0, // Default to 0 if no reports or lat
-          longitude: data[0].longitude || 0, // Default to 0 if no reports or long
-          latitudeDelta: 5, // Wider view for admin map
-          longitudeDelta: 5,
-        });
+        // Set initial map region to the average of all report locations, or a default if none
+        const latitudes = data.filter(r => r.latitude).map(r => r.latitude);
+        const longitudes = data.filter(r => r.longitude).map(r => r.longitude);
+        
+        if (latitudes.length > 0 && longitudes.length > 0) {
+          const avgLat = latitudes.reduce((sum, lat) => sum + lat, 0) / latitudes.length;
+          const avgLon = longitudes.reduce((sum, lon) => sum + lon, 0) / longitudes.length;
+          setMapRegion({
+            latitude: avgLat,
+            longitude: avgLon,
+            latitudeDelta: 0.5, // Wider view for admin map
+            longitudeDelta: 0.5,
+          });
+        } else {
+          setMapRegion({ latitude: 0, longitude: 0, latitudeDelta: 5, longitudeDelta: 5 });
+        }
       }
     }
     setLoading(false);
@@ -65,31 +91,37 @@ const AdminDashboard = () => {
 
   const getMarkerColor = (severity) => {
     switch (severity) {
-      case 'high': return 'red';
-      case 'medium': return 'orange';
-      case 'low': return 'green';
-      default: return 'blue';
+      case 'high': return Colors.redSeverity;
+      case 'medium': return Colors.orangeSeverity;
+      case 'low': return Colors.greenSeverity;
+      default: return Colors.accentBlue; // Default for unknown/other
     }
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'pending': return '#ffc107'; // Yellow
-      case 'validated': return '#28a745'; // Green
-      case 'resolved': return '#17a2b8'; // Teal
-      case 'false': return '#dc3545'; // Red
-      default: return '#6c757d'; // Gray
+      case 'pending': return Colors.statusPending;
+      case 'validated': return Colors.statusValidated;
+      case 'resolved': return Colors.statusResolved;
+      case 'false': return Colors.statusFalse;
+      default: return Colors.textSecondary;
     }
   };
 
   const getSeveritySummary = () => {
-    const summary = { high: 0, medium: 0, low: 0, unknown: 0, total: reports.length };
+    const summary = { high: 0, medium: 0, low: 0, unknown: 0, pending:0, validated:0, resolved:0, false:0, total: reports.length };
     reports.forEach(report => {
       switch (report.severity) {
         case 'high': summary.high++; break;
         case 'medium': summary.medium++; break;
         case 'low': summary.low++; break;
         default: summary.unknown++; break;
+      }
+      switch (report.status) {
+        case 'pending': summary.pending++; break;
+        case 'validated': summary.validated++; break;
+        case 'resolved': summary.resolved++; break;
+        case 'false': summary.false++; break;
       }
     });
     return summary;
@@ -105,25 +137,31 @@ const AdminDashboard = () => {
       <Text style={styles.sectionTitle}>Reports Summary</Text>
       <View style={styles.summaryCard}>
         <Text style={styles.summaryText}>Total Reports: {summary.total}</Text>
-        <Text style={[styles.summaryText, { color: 'red' }]}>High Severity: {summary.high}</Text>
-        <Text style={[styles.summaryText, { color: 'orange' }]}>Medium Severity: {summary.medium}</Text>
-        <Text style={[styles.summaryText, { color: 'green' }]}>Low Severity: {summary.low}</Text>
+        <Text style={[styles.summaryText, { color: Colors.redSeverity }]}>High Severity: {summary.high}</Text>
+        <Text style={[styles.summaryText, { color: Colors.orangeSeverity }]}>Medium Severity: {summary.medium}</Text>
+        <Text style={[styles.summaryText, { color: Colors.greenSeverity }]}>Low Severity: {summary.low}</Text>
         {summary.unknown > 0 && <Text style={styles.summaryText}>Unknown Severity: {summary.unknown}</Text>}
+        <View style={styles.summaryDivider} />
+        <Text style={[styles.summaryText, { color: Colors.statusPending }]}>Pending: {summary.pending}</Text>
+        <Text style={[styles.summaryText, { color: Colors.statusValidated }]}>Validated: {summary.validated}</Text>
+        <Text style={[styles.summaryText, { color: Colors.statusResolved }]}>Resolved: {summary.resolved}</Text>
+        <Text style={[styles.summaryText, { color: Colors.statusFalse }]}>False: {summary.false}</Text>
       </View>
 
       {/* Map Section */}
       <Text style={styles.sectionTitle}>All Reported Locations</Text>
       {loading ? (
         <View style={styles.mapLoading}>
-          <ActivityIndicator size="large" color="#0000ff" />
-          <Text>Loading Map...</Text>
+          <ActivityIndicator size="large" color={Colors.accentBlue} />
+          <Text style={styles.textPrimary}>Loading Map...</Text>
         </View>
       ) : (
         mapRegion && (
           <MapView
             style={styles.map}
             initialRegion={mapRegion}
-            showsUserLocation={false} // Admin map doesn't necessarily need admin's location
+            showsUserLocation={false}
+            customMapStyle={mapStyle} // Apply dark map style
           >
             {reports.map((report) => (
               report.latitude && report.longitude && (
@@ -131,7 +169,7 @@ const AdminDashboard = () => {
                   key={report.id}
                   coordinate={{ latitude: report.latitude, longitude: report.longitude }}
                   title={`${report.hazard_type} (${report.status})`}
-                  description={report.description}
+                  description={`${report.description} (Severity: ${report.severity})`}
                   pinColor={getMarkerColor(report.severity)}
                 />
               )
@@ -143,16 +181,17 @@ const AdminDashboard = () => {
       {/* All Reports List */}
       <Text style={styles.sectionTitle}>Manage Reports</Text>
       {loading ? (
-        <ActivityIndicator size="large" color="#0000ff" />
+        <ActivityIndicator size="large" color={Colors.accentBlue} />
       ) : (
         reports.length === 0 ? (
           <Text style={styles.noReportsText}>No reports to manage.</Text>
         ) : (
           reports.map((report) => (
             <View key={report.id} style={styles.reportCard}>
-              <Text style={styles.reportCardTitle}>{report.hazard_type} ({report.severity})</Text>
+              <Text style={styles.reportCardTitle}>{report.hazard_type}</Text>
+              <Text style={[styles.reportCardMeta, { color: getMarkerColor(report.severity) }]}>Severity: {report.severity.toUpperCase()}</Text>
               <Text style={[styles.reportCardStatus, { color: getStatusColor(report.status) }]}>Status: {report.status.toUpperCase()}</Text>
-              <Text>{report.description}</Text>
+              <Text style={styles.reportCardDescription}>{report.description}</Text>
               {report.media_url && (
                 <Image source={{ uri: report.media_url }} style={styles.reportImage} />
               )}
@@ -161,16 +200,20 @@ const AdminDashboard = () => {
               {report.contact_name && <Text style={styles.reportCardMeta}>Contact: {report.contact_name} ({report.contact_phone})</Text>}
 
               <View style={styles.adminActions}>
-                <Picker
-                  selectedValue={report.status}
-                  style={styles.statusPicker}
-                  onValueChange={(itemValue) => updateReportStatus(report.id, itemValue)}
-                >
-                  <Picker.Item label="Pending" value="pending" />
-                  <Picker.Item label="Validated" value="validated" />
-                  <Picker.Item label="Resolved" value="resolved" />
-                  <Picker.Item label="False" value="false" />
-                </Picker>
+                <View style={styles.pickerContainer}>
+                    <Picker
+                    selectedValue={report.status}
+                    style={styles.picker}
+                    itemStyle={styles.pickerItem}
+                    dropdownIconColor={Colors.accentBlue}
+                    onValueChange={(itemValue) => updateReportStatus(report.id, itemValue)}
+                    >
+                    <Picker.Item label="Pending" value="pending" />
+                    <Picker.Item label="Validated" value="validated" />
+                    <Picker.Item label="Resolved" value="resolved" />
+                    <Picker.Item label="False" value="false" />
+                    </Picker>
+                </View>
               </View>
             </View>
           ))
@@ -183,111 +226,309 @@ const AdminDashboard = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 10,
-    backgroundColor: '#f8f9fa', // Lighter background for admin
+    padding: 15,
+    backgroundColor: Colors.primaryDark,
   },
   header: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginVertical: 15,
-    color: '#343a40',
+    marginVertical: 20,
+    color: Colors.accentBlue,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginTop: 20,
-    marginBottom: 10,
-    color: '#343a40',
+    marginTop: 30,
+    marginBottom: 15,
+    color: Colors.textPrimary,
     borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
-    paddingBottom: 5,
+    borderBottomColor: Colors.borderColor,
+    paddingBottom: 8,
   },
   summaryCard: {
-    backgroundColor: '#e9f7ef', // Light green for summary
-    padding: 15,
-    borderRadius: 8,
+    backgroundColor: Colors.secondaryDark,
+    padding: 20,
+    borderRadius: 10,
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: '#d4edda',
+    borderColor: Colors.borderColor,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   summaryText: {
     fontSize: 16,
     marginBottom: 5,
-    color: '#28a745',
+    color: Colors.textPrimary,
+  },
+  summaryDivider: {
+    height: 1,
+    backgroundColor: Colors.borderColor,
+    marginVertical: 10,
   },
   map: {
     width: '100%',
     height: 300,
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: Colors.borderColor,
+    overflow: 'hidden',
   },
   mapLoading: {
     width: '100%',
     height: 300,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#e0e0e0',
-    borderRadius: 8,
+    backgroundColor: Colors.secondaryDark,
+    borderRadius: 10,
   },
   reportCard: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 10,
+    backgroundColor: Colors.secondaryDark,
+    padding: 20,
+    borderRadius: 10,
+    marginBottom: 15,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: Colors.borderColor,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   reportCardTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 5,
-    color: '#333',
+    color: Colors.accentBlue,
+  },
+  reportCardDescription: {
+    fontSize: 15,
+    color: Colors.textPrimary,
+    marginTop: 5,
+  },
+  reportCardMeta: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginTop: 5,
   },
   reportCardStatus: {
     fontSize: 14,
     fontWeight: 'bold',
     marginBottom: 5,
   },
-  reportCardMeta: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 5,
-  },
   reportImage: {
     width: '100%',
-    height: 150,
+    height: 180,
     resizeMode: 'cover',
-    borderRadius: 5,
-    marginTop: 10,
+    borderRadius: 8,
+    marginTop: 15,
   },
   noReportsText: {
     textAlign: 'center',
-    color: '#666',
+    color: Colors.textSecondary,
     fontStyle: 'italic',
-    marginTop: 10,
+    marginTop: 15,
+    fontSize: 16,
   },
   adminActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 10,
+    marginTop: 15,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
-    paddingTop: 10,
+    borderTopColor: Colors.borderColor,
+    paddingTop: 15,
   },
-  statusPicker: {
-    height: 50,
-    width: '100%',
-    backgroundColor: '#f0f0f0',
-    borderRadius: 5,
+  pickerContainer: {
+    backgroundColor: Colors.primaryDark, // Darker background for picker itself
+    borderWidth: 1,
+    borderColor: Colors.borderColor,
+    borderRadius: 8,
+    overflow: 'hidden',
+    height: 50, // Fixed height for consistency
+    justifyContent: 'center',
+  },
+  picker: {
+    color: Colors.textPrimary,
+    // The height of the picker component on iOS is usually fixed.
+    // On Android, it's often best controlled by its container.
+  },
+  pickerItem: {
+    backgroundColor: Colors.primaryDark, // May not work on all platforms
+    color: Colors.textPrimary, // May not work on all platforms
   },
 });
+
+// Custom Map Style for Dark Theme (Optional, but looks good with dark UI)
+// You can generate custom styles from Snazzy Maps or Google Cloud Console
+const mapStyle = [
+  {
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#172a45"
+      }
+    ]
+  },
+  {
+    "elementType": "labels.icon",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#8892b0"
+      }
+    ]
+  },
+  {
+    "elementType": "labels.text.stroke",
+    "stylers": [
+      {
+        "color": "#172a45"
+      }
+    ]
+  },
+  {
+    "featureType": "administrative",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#172a45"
+      }
+    ]
+  },
+  {
+    "featureType": "administrative.land_parcel",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
+    "featureType": "administrative.locality",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#ccd6f6"
+      }
+    ]
+  },
+  {
+    "featureType": "poi",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#8892b0"
+      }
+    ]
+  },
+  {
+    "featureType": "poi.park",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#172a45"
+      }
+    ]
+  },
+  {
+    "featureType": "poi.park",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#8892b0"
+      }
+    ]
+  },
+  {
+    "featureType": "road",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#172a45"
+      }
+    ]
+  },
+  {
+    "featureType": "road",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#8892b0"
+      }
+    ]
+  },
+  {
+    "featureType": "road.arterial",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#ccd6f6"
+      }
+    ]
+  },
+  {
+    "featureType": "road.highway",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#0A192F"
+      }
+    ]
+  },
+  {
+    "featureType": "road.highway",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#ccd6f6"
+      }
+    ]
+  },
+  {
+    "featureType": "road.local",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#8892b0"
+      }
+    ]
+  },
+  {
+    "featureType": "transit",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#8892b0"
+      }
+    ]
+  },
+  {
+    "featureType": "water",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#0F1E3A"
+      }
+    ]
+  },
+  {
+    "featureType": "water",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#ccd6f6"
+      }
+    ]
+  }
+];
+
 
 export default AdminDashboard;
