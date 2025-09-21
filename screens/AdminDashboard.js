@@ -8,9 +8,9 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  // Removed Picker from react-native import
+  TouchableOpacity, // Import TouchableOpacity for the button
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker'; // Correct import for Picker
+import { Picker } from '@react-native-picker/picker';
 import MapView, { Marker } from 'react-native-maps';
 import { supabase } from '../utils/supabase';
 
@@ -27,7 +27,6 @@ const Colors = {
   borderColor: '#303C55', // Border color for inputs/cards
   statusPending: '#FFC300', // Amber for pending
   statusValidated: '#28a745', // Green for validated
-  statusResolved: '#17a2b8', // Teal for resolved
   statusFalse: '#dc3545', // Red for false
 };
 
@@ -63,12 +62,15 @@ const AdminDashboard = () => {
           setMapRegion({
             latitude: avgLat,
             longitude: avgLon,
-            latitudeDelta: 0.5, // Wider view for admin map
-            longitudeDelta: 0.5,
+            latitudeDelta: 15, // Wider view for admin map
+            longitudeDelta: 15,
           });
         } else {
           setMapRegion({ latitude: 0, longitude: 0, latitudeDelta: 5, longitudeDelta: 5 });
         }
+      } else {
+        // If no reports, set a default map region (e.g., center of a country/continent)
+        setMapRegion({ latitude: 34.0522, longitude: -118.2437, latitudeDelta: 5, longitudeDelta: 5 }); // Example: Los Angeles
       }
     }
     setLoading(false);
@@ -91,6 +93,7 @@ const AdminDashboard = () => {
 
   const getMarkerColor = (severity) => {
     switch (severity) {
+      case 'critical': return Colors.redSeverity;
       case 'high': return Colors.redSeverity;
       case 'medium': return Colors.orangeSeverity;
       case 'low': return Colors.greenSeverity;
@@ -112,6 +115,7 @@ const AdminDashboard = () => {
     const summary = { high: 0, medium: 0, low: 0, unknown: 0, pending:0, validated:0, resolved:0, false:0, total: reports.length };
     reports.forEach(report => {
       switch (report.severity) {
+        case 'critical': summary.high++; break; // Treat critical as high
         case 'high': summary.high++; break;
         case 'medium': summary.medium++; break;
         case 'low': summary.low++; break;
@@ -129,9 +133,25 @@ const AdminDashboard = () => {
 
   const summary = getSeveritySummary();
 
+  const mapRef = React.useRef(null);
+  
+    const indiaBounds = [
+          { latitude: 6.5546, longitude: 68.1114 },  // Southwest
+          { latitude: 37.0841, longitude: 97.3956 }, // Northeast
+        ];
+
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.header}>Admin Dashboard</Text>
+      <View style={styles.headerContainer}>
+        <Text style={styles.header}>Admin Dashboard</Text>
+        <TouchableOpacity onPress={fetchReports} style={styles.refreshButton}>
+          {loading ? (
+            <ActivityIndicator size="small" color={Colors.primaryDark} />
+          ) : (
+            <Text style={styles.refreshButtonText}>Refresh</Text>
+          )}
+        </TouchableOpacity>
+      </View>
 
       {/* Summary */}
       <Text style={styles.sectionTitle}>Reports Summary</Text>
@@ -158,10 +178,16 @@ const AdminDashboard = () => {
       ) : (
         mapRegion && (
           <MapView
+            ref={mapRef}
             style={styles.map}
-            initialRegion={mapRegion}
-            showsUserLocation={false}
-            customMapStyle={mapStyle} // Apply dark map style
+            onMapReady={() => {
+              mapRef.current?.fitToCoordinates(indiaBounds, {
+                edgePadding: { top: 10, right: 10, bottom: 10, left: 10 },
+                animated: true,
+              });
+            }}
+            showsUserLocation={true}
+            // customMapStyle={mapStyle}
           >
             {reports.map((report) => (
               report.latitude && report.longitude && (
@@ -210,7 +236,6 @@ const AdminDashboard = () => {
                     >
                     <Picker.Item label="Pending" value="pending" />
                     <Picker.Item label="Validated" value="validated" />
-                    <Picker.Item label="Resolved" value="resolved" />
                     <Picker.Item label="False" value="false" />
                     </Picker>
                 </View>
@@ -229,12 +254,31 @@ const styles = StyleSheet.create({
     padding: 15,
     backgroundColor: Colors.primaryDark,
   },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 20,
+    paddingHorizontal: 5,
+  },
   header: {
     fontSize: 28,
     fontWeight: 'bold',
-    textAlign: 'center',
-    marginVertical: 20,
     color: Colors.accentBlue,
+  },
+  refreshButton: {
+    backgroundColor: Colors.accentBlue,
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 80, // Ensure button has a minimum width
+  },
+  refreshButtonText: {
+    color: Colors.primaryDark,
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   sectionTitle: {
     fontSize: 20,

@@ -37,10 +37,20 @@ const Colors = {
 
 // Hazard Type and Severity options for Pickers
 const hazardTypes = [
-  'Oil Spill', 'Debris', 'Dangerous Current', 'Algae Bloom', 'Chemical Leak',
-  'Illegal Dumping', 'Marine Life Disturbance', 'Other'
+  'Oil Spill',
+  'Plastic Pollution',
+  'Dangerous Rip Current',
+  'Algae Bloom',
+  'Coral Bleaching',
+  'Flooding / Storm Surge',
+  'Tsunami Warning',
+  'Chemical Leak',
+  'Illegal Dumping',
+  'Shark / Marine Life Sighting',
+  'Erosion',
+  'Other'
 ];
-const severities = ['low', 'medium', 'high'];
+const severities = ['low', 'medium', 'high','critical'];
 
 const UserDashboard = () => {
   const [region, setRegion] = useState(null);
@@ -110,13 +120,35 @@ const UserDashboard = () => {
     }
   };
 
+  // Capture a photo using the device camera
+  const takePhoto = async () => {
+    let result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.5,
+      base64: true,
+    });
+
+    if (!result.canceled) {
+      setImage(result.assets[0]);
+    }
+  };
+
+  const mapRef = React.useRef(null);
+
+  const indiaBounds = [
+        { latitude: 6.5546, longitude: 68.1114 },  // Southwest
+        { latitude: 37.0841, longitude: 97.3956 }, // Northeast
+      ];
+
   const uploadImageAndGetUrl = async () => {
     if (!image) return null;
 
     setUploading(true);
     const fileExt = image.uri.split('.').pop();
     const fileName = `${uuidv4()}.${fileExt}`;
-    const filePath = `public/${fileName}`;
+    const filePath = `reports/${fileName}`;
 
     try {
       const { error } = await supabase.storage
@@ -189,12 +221,14 @@ const UserDashboard = () => {
       setContactName('');
       setContactPhone('');
       setImage(null);
+      fetchValidatedReports(); // Refresh validated reports after submission
     }
     setUploading(false);
   };
 
   const getMarkerColor = (severity) => {
     switch (severity) {
+      case 'critical': return Colors.redSeverity;
       case 'high': return Colors.redSeverity;
       case 'medium': return Colors.orangeSeverity;
       case 'low': return Colors.greenSeverity;
@@ -204,16 +238,31 @@ const UserDashboard = () => {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.header}>Ocean Hazard Reporter</Text>
+      <View style={styles.headerContainer}>
+        <Text style={styles.header}>Ocean Hazard Reporter</Text>
+        <TouchableOpacity onPress={fetchValidatedReports} style={styles.refreshButton}>
+          {loadingReports ? (
+            <ActivityIndicator size="small" color={Colors.primaryDark} />
+          ) : (
+            <Text style={styles.refreshButtonText}>Refresh</Text>
+          )}
+        </TouchableOpacity>
+      </View>
 
       {/* Map Section */}
       <Text style={styles.sectionTitle}>Validated Hazard Locations</Text>
       {region ? (
         <MapView
+          ref={mapRef}
           style={styles.map}
-          initialRegion={region}
+          onMapReady={() => {
+            mapRef.current?.fitToCoordinates(indiaBounds, {
+              edgePadding: { top: 10, right: 10, bottom: 10, left: 10 },
+              animated: true,
+            });
+          }}
           showsUserLocation={true}
-          customMapStyle={mapStyle} // Apply dark map style
+          // customMapStyle={mapStyle}
         >
           {reports.map((report) => (
             report.latitude && report.longitude && (
@@ -288,9 +337,14 @@ const UserDashboard = () => {
         onChangeText={setContactPhone}
         keyboardType="phone-pad"
       />
-      <TouchableOpacity onPress={pickImage} style={styles.imagePickerButton}>
-        <Text style={styles.imagePickerButtonText}>Pick an image/video</Text>
-      </TouchableOpacity>
+      <View style={{ flexDirection: 'row', gap: 10 }}>
+        <TouchableOpacity onPress={pickImage} style={[styles.imagePickerButton, { flex: 1 }]}>
+          <Text style={styles.imagePickerButtonText}>Pick from gallery</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={takePhoto} style={[styles.imagePickerButton, { flex: 1 }]}>
+          <Text style={styles.imagePickerButtonText}>Take a photo</Text>
+        </TouchableOpacity>
+      </View>
       {image && <Image source={{ uri: image.uri }} style={styles.previewImage} />}
 
       <TouchableOpacity
@@ -311,7 +365,7 @@ const UserDashboard = () => {
         ) : (
           reports.map((report) => (
             <View key={report.id} style={styles.reportCard}>
-              <Text style={styles.reportCardTitle}>{report.hazard_type}</Text>
+              <Text style={styles.reportCardTitle}>{report.hazard_type.toUpperCase()}</Text>
               <Text style={[styles.reportCardMeta, { color: getMarkerColor(report.severity) }]}>Severity: {report.severity.toUpperCase()}</Text>
               <Text style={styles.reportCardDescription}>{report.description}</Text>
               {report.media_url && (
@@ -341,12 +395,31 @@ const styles = StyleSheet.create({
     padding: 15,
     backgroundColor: Colors.primaryDark,
   },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 20,
+    paddingHorizontal: 5,
+  },
   header: {
     fontSize: 28,
     fontWeight: 'bold',
-    textAlign: 'center',
-    marginVertical: 20,
     color: Colors.accentBlue,
+  },
+  refreshButton: {
+    backgroundColor: Colors.accentBlue,
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 80, // Ensure button has a minimum width
+  },
+  refreshButtonText: {
+    color: Colors.primaryDark,
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   sectionTitle: {
     fontSize: 20,

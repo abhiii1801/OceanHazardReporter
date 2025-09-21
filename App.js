@@ -12,10 +12,15 @@ export default function App() {
     <NavigationContainer>
       <Tab.Navigator
         initialRouteName="User"
-        tabBarOptions={{
-          activeTintColor: 'blue',
-          inactiveTintColor: 'gray',
-          style: { paddingTop: 30 }, // To avoid notch issues on some phones
+        screenOptions={{
+          tabBarActiveTintColor: '#007AFF',  // iOS blue
+          tabBarInactiveTintColor: '#8e8e93', // muted gray
+          tabBarIndicatorStyle: { backgroundColor: '#007AFF', height: 3 },
+          tabBarLabelStyle: { fontSize: 14, fontWeight: '600' },
+          tabBarStyle: {
+            backgroundColor: '#fff',
+            paddingTop: 30, // space for notch
+          },
         }}
       >
         <Tab.Screen name="User" component={UserDashboard} />
