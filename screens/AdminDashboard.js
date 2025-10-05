@@ -14,20 +14,20 @@ import { Picker } from '@react-native-picker/picker';
 import MapView, { Marker } from 'react-native-maps';
 import { supabase } from '../utils/supabase';
 
-// Define theme colors
+// Define theme colors (Light theme with light blues)
 const Colors = {
-  primaryDark: '#0A192F', // Deep dark blue
-  secondaryDark: '#172A45', // Slightly lighter dark blue for cards
-  accentBlue: '#64FFDA', // Bright greenish-blue for accents/buttons
-  textPrimary: '#CCD6F6', // Light gray for primary text
-  textSecondary: '#8892B0', // Gray for secondary text
-  redSeverity: '#FF6B6B', // Red for high severity
-  orangeSeverity: '#FFA07A', // Orange for medium severity
-  greenSeverity: '#84DCC6', // Teal/Green for low severity
-  borderColor: '#303C55', // Border color for inputs/cards
-  statusPending: '#FFC300', // Amber for pending
-  statusValidated: '#28a745', // Green for validated
-  statusFalse: '#dc3545', // Red for false
+  primaryDark: '#F6FAFE', // Light background
+  secondaryDark: '#FFFFFF', // Cards/sections
+  accentBlue: '#3B82F6', // Light blue accent
+  textPrimary: '#0F172A', // Dark text
+  textSecondary: '#475569', // Muted dark
+  redSeverity: '#DC2626',
+  orangeSeverity: '#F59E0B',
+  greenSeverity: '#16A34A',
+  borderColor: '#CFE3FF',
+  statusPending: '#F59E0B',
+  statusValidated: '#16A34A',
+  statusFalse: '#DC2626',
 };
 
 const AdminDashboard = () => {
@@ -265,6 +265,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     color: Colors.accentBlue,
+    fontFamily: 'Times New Roman',
   },
   refreshButton: {
     backgroundColor: Colors.accentBlue,
@@ -279,6 +280,7 @@ const styles = StyleSheet.create({
     color: Colors.primaryDark,
     fontSize: 16,
     fontWeight: 'bold',
+    fontFamily: 'Times New Roman',
   },
   sectionTitle: {
     fontSize: 20,
@@ -289,6 +291,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.borderColor,
     paddingBottom: 8,
+    fontFamily: 'Times New Roman',
   },
   summaryCard: {
     backgroundColor: Colors.secondaryDark,
@@ -307,6 +310,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 5,
     color: Colors.textPrimary,
+    fontFamily: 'Times New Roman',
   },
   summaryDivider: {
     height: 1,
@@ -347,21 +351,25 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 5,
     color: Colors.accentBlue,
+    fontFamily: 'Times New Roman',
   },
   reportCardDescription: {
     fontSize: 15,
     color: Colors.textPrimary,
     marginTop: 5,
+    fontFamily: 'Times New Roman',
   },
   reportCardMeta: {
     fontSize: 13,
     color: Colors.textSecondary,
     marginTop: 5,
+    fontFamily: 'Times New Roman',
   },
   reportCardStatus: {
     fontSize: 14,
     fontWeight: 'bold',
     marginBottom: 5,
+    fontFamily: 'Times New Roman',
   },
   reportImage: {
     width: '100%',
@@ -376,6 +384,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginTop: 15,
     fontSize: 16,
+    fontFamily: 'Times New Roman',
   },
   adminActions: {
     marginTop: 15,

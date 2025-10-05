@@ -22,17 +22,17 @@ import { decode } from 'base64-arraybuffer';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 
-// Define theme colors
+// Define theme colors (Light theme with light blues)
 const Colors = {
-  primaryDark: '#0A192F', // Deep dark blue
-  secondaryDark: '#172A45', // Slightly lighter dark blue for cards
-  accentBlue: '#64FFDA', // Bright greenish-blue for accents/buttons
-  textPrimary: '#CCD6F6', // Light gray for primary text
-  textSecondary: '#8892B0', // Gray for secondary text
-  redSeverity: '#FF6B6B', // Red for high severity
-  orangeSeverity: '#FFA07A', // Orange for medium severity
-  greenSeverity: '#84DCC6', // Teal/Green for low severity
-  borderColor: '#303C55', // Border color for inputs/cards
+  primaryDark: '#F6FAFE', // Light background
+  secondaryDark: '#FFFFFF', // Cards/inputs
+  accentBlue: '#3B82F6', // Light blue accent
+  textPrimary: '#0F172A', // Dark text
+  textSecondary: '#475569', // Muted dark
+  redSeverity: '#DC2626', // Red for high
+  orangeSeverity: '#F59E0B', // Orange for medium
+  greenSeverity: '#16A34A', // Green for low
+  borderColor: '#CFE3FF', // Light blue border
 };
 
 // Hazard Type and Severity options for Pickers
@@ -406,6 +406,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     color: Colors.accentBlue,
+    fontFamily: 'Times New Roman',
   },
   refreshButton: {
     backgroundColor: Colors.accentBlue,
@@ -430,6 +431,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.borderColor,
     paddingBottom: 8,
+    fontFamily: 'Times New Roman',
   },
   map: {
     width: '100%',
@@ -456,6 +458,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 10,
     fontSize: 16,
+    fontFamily: 'Times New Roman',
   },
   pickerContainer: {
     backgroundColor: Colors.secondaryDark,
@@ -484,6 +487,7 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     fontWeight: 'bold',
     fontSize: 16,
+    fontFamily: 'Times New Roman',
   },
   previewImage: {
     width: '100%',
@@ -505,9 +509,10 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitButtonText: {
-    color: Colors.primaryDark,
+    color: '#FFFFFF',
     fontWeight: 'bold',
     fontSize: 18,
+    fontFamily: 'Times New Roman',
   },
   reportCard: {
     backgroundColor: Colors.secondaryDark,
@@ -527,6 +532,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 5,
     color: Colors.accentBlue,
+    fontFamily: 'Times New Roman',
   },
   reportCardDescription: {
     fontSize: 15,
